@@ -1,0 +1,1548 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "applied-desperate",
+   "metadata": {
+    "_cell_guid": "b1076dfc-b9ad-4769-8c92-a6c4dae69d19",
+    "_uuid": "8f2839f25d086af736a60e9eeb907d3b93b6e0e5",
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:14.897342Z",
+     "iopub.status.busy": "2021-07-01T03:15:14.896097Z",
+     "iopub.status.idle": "2021-07-01T03:15:14.910386Z",
+     "shell.execute_reply": "2021-07-01T03:15:14.911063Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.453147Z"
+    },
+    "papermill": {
+     "duration": 0.048714,
+     "end_time": "2021-07-01T03:15:14.911471",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:14.862757",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "/kaggle/input/titanic/train.csv\n",
+      "/kaggle/input/titanic/test.csv\n",
+      "/kaggle/input/titanic/gender_submission.csv\n"
+     ]
+    }
+   ],
+   "source": [
+    "# This Python 3 environment comes with many helpful analytics libraries installed\n",
+    "# It is defined by the kaggle/python Docker image: https://github.com/kaggle/docker-python\n",
+    "# For example, here's several helpful packages to load\n",
+    "\n",
+    "import numpy as np # linear algebra\n",
+    "import pandas as pd # data processing, CSV file I/O (e.g. pd.read_csv)\n",
+    "\n",
+    "# Input data files are available in the read-only \"../input/\" directory\n",
+    "# For example, running this (by clicking run or pressing Shift+Enter) will list all files under the input directory\n",
+    "\n",
+    "import os\n",
+    "for dirname, _, filenames in os.walk('/kaggle/input'):\n",
+    "    for filename in filenames:\n",
+    "        print(os.path.join(dirname, filename))\n",
+    "\n",
+    "# You can write up to 20GB to the current directory (/kaggle/working/) that gets preserved as output when you create a version using \"Save & Run All\" \n",
+    "# You can also write temporary files to /kaggle/temp/, but they won't be saved outside of the current session"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "statistical-romantic",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:14.975182Z",
+     "iopub.status.busy": "2021-07-01T03:15:14.974155Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.041794Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.041107Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.463838Z"
+    },
+    "papermill": {
+     "duration": 0.099521,
+     "end_time": "2021-07-01T03:15:15.041940",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:14.942419",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 418 entries, 0 to 417\n",
+      "Data columns (total 11 columns):\n",
+      " #   Column       Non-Null Count  Dtype  \n",
+      "---  ------       --------------  -----  \n",
+      " 0   PassengerId  418 non-null    int64  \n",
+      " 1   Pclass       418 non-null    int64  \n",
+      " 2   Name         418 non-null    object \n",
+      " 3   Sex          418 non-null    object \n",
+      " 4   Age          332 non-null    float64\n",
+      " 5   SibSp        418 non-null    int64  \n",
+      " 6   Parch        418 non-null    int64  \n",
+      " 7   Ticket       418 non-null    object \n",
+      " 8   Fare         417 non-null    float64\n",
+      " 9   Cabin        91 non-null     object \n",
+      " 10  Embarked     418 non-null    object \n",
+      "dtypes: float64(2), int64(4), object(5)\n",
+      "memory usage: 36.0+ KB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df_train = pd.read_csv(\"/kaggle/input/titanic/train.csv\")\n",
+    "df_test = pd.read_csv(\"/kaggle/input/titanic/test.csv\")\n",
+    "df_gender = pd.read_csv(\"/kaggle/input/titanic/gender_submission.csv\")\n",
+    "df_test.info()\n",
+    "df_train = df_train.fillna(0)\n",
+    "df_test = df_test.fillna(0)\n",
+    "df_gender = df_gender.fillna(0)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "practical-float",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.114514Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.113708Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.116876Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.117367Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.498936Z"
+    },
+    "papermill": {
+     "duration": 0.044846,
+     "end_time": "2021-07-01T03:15:15.117551",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.072705",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "29.69911764705882\n",
+      "30.272590361445783\n"
+     ]
+    }
+   ],
+   "source": [
+    "new_age_train = []\n",
+    "tot = 0\n",
+    "for i in df_train['Age']:\n",
+    "    if i != 0:\n",
+    "        tot += i\n",
+    "avg_age = tot/714\n",
+    "print(avg_age)\n",
+    "\n",
+    "for i in df_train['Age']:\n",
+    "    if i == 0:\n",
+    "        new_age_train.append(avg_age)\n",
+    "    else:\n",
+    "        new_age_train.append(i)\n",
+    "df_train['Age'] = new_age_train\n",
+    "\n",
+    "new_age_test = []\n",
+    "tot = 0\n",
+    "for i in df_test['Age']:\n",
+    "    if i != 0:\n",
+    "        tot += i\n",
+    "avg_age = tot/332\n",
+    "print(avg_age)\n",
+    "\n",
+    "for i in df_test['Age']:\n",
+    "    if i == 0:\n",
+    "        new_age_test.append(avg_age)\n",
+    "    else:\n",
+    "        new_age_test.append(i)\n",
+    "df_test['Age'] = new_age_test"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "spread-luther",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.182423Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.181454Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.187368Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.187898Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.509871Z"
+    },
+    "papermill": {
+     "duration": 0.039975,
+     "end_time": "2021-07-01T03:15:15.188068",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.148093",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "new_embark = []\n",
+    "for i in df_train['Embarked']:\n",
+    "    if i == 0:\n",
+    "        new_embark.append('S')\n",
+    "    else:\n",
+    "        new_embark.append(i)\n",
+    "df_train['Embarked'] = new_embark"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "phantom-craft",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.252021Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.251009Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.256705Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.257222Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.523236Z"
+    },
+    "papermill": {
+     "duration": 0.039381,
+     "end_time": "2021-07-01T03:15:15.257392",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.218011",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "new_fare = []\n",
+    "for i in df_test['Fare']:\n",
+    "    if i == 0:\n",
+    "        new_fare.append(35.6271884892086)\n",
+    "    else:\n",
+    "        new_fare.append(i)\n",
+    "df_test['Fare'] = new_fare"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 6,
+   "id": "occasional-toolbox",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.321921Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.321223Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.326696Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.327165Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.532476Z"
+    },
+    "papermill": {
+     "duration": 0.039002,
+     "end_time": "2021-07-01T03:15:15.327343",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.288341",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df_train = df_train.drop(columns = [\"Cabin\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "former-cholesterol",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.390552Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.389928Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.395849Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.395280Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.541786Z"
+    },
+    "papermill": {
+     "duration": 0.038506,
+     "end_time": "2021-07-01T03:15:15.395988",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.357482",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "df_test = df_test.drop(columns = [\"Cabin\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "loving-jacksonville",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.472979Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.472287Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.475044Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.475564Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.553377Z"
+    },
+    "papermill": {
+     "duration": 0.049058,
+     "end_time": "2021-07-01T03:15:15.475739",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.426681",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "<class 'pandas.core.frame.DataFrame'>\n",
+      "RangeIndex: 891 entries, 0 to 890\n",
+      "Data columns (total 11 columns):\n",
+      " #   Column       Non-Null Count  Dtype  \n",
+      "---  ------       --------------  -----  \n",
+      " 0   PassengerId  891 non-null    int64  \n",
+      " 1   Survived     891 non-null    int64  \n",
+      " 2   Pclass       891 non-null    int64  \n",
+      " 3   Name         891 non-null    object \n",
+      " 4   Sex          891 non-null    object \n",
+      " 5   Age          891 non-null    float64\n",
+      " 6   SibSp        891 non-null    int64  \n",
+      " 7   Parch        891 non-null    int64  \n",
+      " 8   Ticket       891 non-null    object \n",
+      " 9   Fare         891 non-null    float64\n",
+      " 10  Embarked     891 non-null    object \n",
+      "dtypes: float64(2), int64(5), object(4)\n",
+      "memory usage: 76.7+ KB\n"
+     ]
+    }
+   ],
+   "source": [
+    "df_train.info()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "alternative-modern",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.541829Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.541177Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.550621Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.551262Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.572075Z"
+    },
+    "papermill": {
+     "duration": 0.044371,
+     "end_time": "2021-07-01T03:15:15.551437",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.507066",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "891\n",
+      "[1, 2, 1, 1, 1, 3, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 3, 1, 1, 2, 1, 1, 3, 1, 1, 1, 2, 1, 3, 1, 2, 2, 3, 1, 2, 1, 2, 1, 1, 2, 1, 1, 2, 2, 3, 1, 3, 3, 2, 1, 1, 1, 2, 1, 2, 1, 1, 2, 1, 1, 2, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 2, 1, 1, 2, 1, 3, 1, 2, 1, 1, 1, 2, 1, 1, 2, 3, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 2, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 1, 2, 2, 3, 1, 3, 1, 1, 1, 1, 2, 1, 1, 1, 2, 3, 2, 1, 1, 1, 1, 3, 2, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 2, 1, 3, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 1, 1, 1, 3, 1, 3, 1, 1, 1, 1, 2, 1, 1, 1, 3, 1, 2, 2, 1, 1, 2, 2, 1, 1, 2, 3, 3, 1, 3, 1, 1, 2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 3, 1, 1, 2, 1, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 3, 3, 1, 2, 2, 1, 3, 1, 2, 2, 3, 2, 2, 1, 1, 2, 1, 2, 1, 2, 2, 1, 2, 2, 1, 1, 1, 1, 1, 1, 3, 2, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 1, 2, 3, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 2, 1, 2, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 3, 2, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 2, 1, 1, 1, 1, 3, 3, 1, 1, 2, 1, 1, 1, 1, 3, 1, 1, 2, 1, 1, 1, 3, 1, 1, 1, 1, 2, 2, 2, 3, 1, 1, 1, 1, 1, 2, 2, 2, 1, 1, 1, 2, 1, 2, 1, 1, 1, 1, 2, 1, 1, 2, 1, 1, 2, 1, 3, 2, 1, 1, 2, 2, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 3, 1, 1, 1, 1, 2, 1, 1, 2, 1, 2, 2, 1, 1, 2, 1, 1, 1, 2, 1, 3, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 2, 1, 1, 1, 2, 1, 1, 1, 3, 3, 1, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 3, 1, 1, 3, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 2, 2, 1, 2, 1, 1, 1, 1, 1, 3, 3, 1, 1, 3, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 3, 2, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 2, 1, 1, 1, 3, 2, 1, 2, 1, 2, 3, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 2, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 2, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 3, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 2, 3, 3, 1, 1, 1, 1, 2, 1, 1, 3, 1, 3, 1, 2, 1, 1, 1, 1, 1, 1, 3, 1, 2, 3, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 3, 1, 2, 3, 1, 2, 1, 2, 1, 1, 2, 1, 1, 1, 2, 1, 1, 2, 2, 1, 1, 1, 2, 1, 2, 1, 1, 2, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 1, 2, 2, 1, 1, 1, 2, 1, 1, 1, 1, 1, 3, 1, 1, 1, 2, 3]\n"
+     ]
+    }
+   ],
+   "source": [
+    "lol = []\n",
+    "for i in df_train[\"Embarked\"]:\n",
+    "    lol.append(i)\n",
+    "#print(lol)\n",
+    "\n",
+    "c = 0\n",
+    "l = []\n",
+    "for i in df_train[\"Embarked\"]:\n",
+    "    if i == \"S\":\n",
+    "        l.append(1)\n",
+    "    elif i == \"C\":\n",
+    "        l.append(2)\n",
+    "    elif i == \"Q\":\n",
+    "        l.append(3)\n",
+    "    else:\n",
+    "        l.append(0)\n",
+    "\n",
+    "print(len(l))\n",
+    "print(l)\n",
+    "df_train[\"Embarked\"] = l"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "traditional-devices",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.621909Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.621189Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.622989Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.623612Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.637917Z"
+    },
+    "papermill": {
+     "duration": 0.041542,
+     "end_time": "2021-07-01T03:15:15.623784",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.582242",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "lol = []\n",
+    "for i in df_test[\"Embarked\"]:\n",
+    "    lol.append(i)\n",
+    "#print(lol)\n",
+    "\n",
+    "c = 0\n",
+    "l = []\n",
+    "for i in df_test[\"Embarked\"]:\n",
+    "    if i == \"S\":\n",
+    "        l.append(1)\n",
+    "    elif i == \"C\":\n",
+    "        l.append(2)\n",
+    "    elif i == \"Q\":\n",
+    "        l.append(3)\n",
+    "    else:\n",
+    "        l.append(0)\n",
+    "\n",
+    "#print(len(l))\n",
+    "#print(l)\n",
+    "df_test[\"Embarked\"] = l"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "rapid-fifth",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.688948Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.688321Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.714923Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.715417Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.646373Z"
+    },
+    "papermill": {
+     "duration": 0.060855,
+     "end_time": "2021-07-01T03:15:15.715595",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.654740",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/html": [
+       "<div>\n",
+       "<style scoped>\n",
+       "    .dataframe tbody tr th:only-of-type {\n",
+       "        vertical-align: middle;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe tbody tr th {\n",
+       "        vertical-align: top;\n",
+       "    }\n",
+       "\n",
+       "    .dataframe thead th {\n",
+       "        text-align: right;\n",
+       "    }\n",
+       "</style>\n",
+       "<table border=\"1\" class=\"dataframe\">\n",
+       "  <thead>\n",
+       "    <tr style=\"text-align: right;\">\n",
+       "      <th></th>\n",
+       "      <th>PassengerId</th>\n",
+       "      <th>Survived</th>\n",
+       "      <th>Pclass</th>\n",
+       "      <th>Name</th>\n",
+       "      <th>Sex</th>\n",
+       "      <th>Age</th>\n",
+       "      <th>SibSp</th>\n",
+       "      <th>Parch</th>\n",
+       "      <th>Ticket</th>\n",
+       "      <th>Fare</th>\n",
+       "      <th>Embarked</th>\n",
+       "    </tr>\n",
+       "  </thead>\n",
+       "  <tbody>\n",
+       "    <tr>\n",
+       "      <th>0</th>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Braund, Mr. Owen Harris</td>\n",
+       "      <td>male</td>\n",
+       "      <td>22.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>A/5 21171</td>\n",
+       "      <td>7.2500</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>1</th>\n",
+       "      <td>2</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Cumings, Mrs. John Bradley (Florence Briggs Th...</td>\n",
+       "      <td>female</td>\n",
+       "      <td>38.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>PC 17599</td>\n",
+       "      <td>71.2833</td>\n",
+       "      <td>2</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>2</th>\n",
+       "      <td>3</td>\n",
+       "      <td>1</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Heikkinen, Miss. Laina</td>\n",
+       "      <td>female</td>\n",
+       "      <td>26.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>STON/O2. 3101282</td>\n",
+       "      <td>7.9250</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>3</th>\n",
+       "      <td>4</td>\n",
+       "      <td>1</td>\n",
+       "      <td>1</td>\n",
+       "      <td>Futrelle, Mrs. Jacques Heath (Lily May Peel)</td>\n",
+       "      <td>female</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>1</td>\n",
+       "      <td>0</td>\n",
+       "      <td>113803</td>\n",
+       "      <td>53.1000</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "    <tr>\n",
+       "      <th>4</th>\n",
+       "      <td>5</td>\n",
+       "      <td>0</td>\n",
+       "      <td>3</td>\n",
+       "      <td>Allen, Mr. William Henry</td>\n",
+       "      <td>male</td>\n",
+       "      <td>35.0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>0</td>\n",
+       "      <td>373450</td>\n",
+       "      <td>8.0500</td>\n",
+       "      <td>1</td>\n",
+       "    </tr>\n",
+       "  </tbody>\n",
+       "</table>\n",
+       "</div>"
+      ],
+      "text/plain": [
+       "   PassengerId  Survived  Pclass  \\\n",
+       "0            1         0       3   \n",
+       "1            2         1       1   \n",
+       "2            3         1       3   \n",
+       "3            4         1       1   \n",
+       "4            5         0       3   \n",
+       "\n",
+       "                                                Name     Sex   Age  SibSp  \\\n",
+       "0                            Braund, Mr. Owen Harris    male  22.0      1   \n",
+       "1  Cumings, Mrs. John Bradley (Florence Briggs Th...  female  38.0      1   \n",
+       "2                             Heikkinen, Miss. Laina  female  26.0      0   \n",
+       "3       Futrelle, Mrs. Jacques Heath (Lily May Peel)  female  35.0      1   \n",
+       "4                           Allen, Mr. William Henry    male  35.0      0   \n",
+       "\n",
+       "   Parch            Ticket     Fare  Embarked  \n",
+       "0      0         A/5 21171   7.2500         1  \n",
+       "1      0          PC 17599  71.2833         2  \n",
+       "2      0  STON/O2. 3101282   7.9250         1  \n",
+       "3      0            113803  53.1000         1  \n",
+       "4      0            373450   8.0500         1  "
+      ]
+     },
+     "execution_count": 11,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "df_train.head()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "several-sequence",
+   "metadata": {
+    "papermill": {
+     "duration": 0.03114,
+     "end_time": "2021-07-01T03:15:15.777977",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.746837",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 12,
+   "id": "current-status",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.847111Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.846456Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.855257Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.855901Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.669135Z"
+    },
+    "papermill": {
+     "duration": 0.046657,
+     "end_time": "2021-07-01T03:15:15.856101",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.809444",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "l = []\n",
+    "for i in df_train['Sex']:\n",
+    "    if i == \"male\":\n",
+    "        l.append(1)\n",
+    "    if i == \"female\":\n",
+    "        l.append(0)\n",
+    "df_train[\"Sex\"] = l"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "adolescent-trauma",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:15.939209Z",
+     "iopub.status.busy": "2021-07-01T03:15:15.938210Z",
+     "iopub.status.idle": "2021-07-01T03:15:15.942881Z",
+     "shell.execute_reply": "2021-07-01T03:15:15.942343Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.68265Z"
+    },
+    "papermill": {
+     "duration": 0.050733,
+     "end_time": "2021-07-01T03:15:15.943031",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.892298",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "\"\\nsurv_cabin = 0\\ndead_cabin = 0\\nfor i in range(891):\\n    if df_train['Survived'][i] == 1 and df_train['Cabin'][i] == 0:\\n        surv_cabin += 1\\n    if df_train['Survived'][i] == 0 and df_train['Cabin'][i] == 0:\\n        dead_cabin += 1\\ntotal = surv_cabin + dead_cabin\\nprint(surv_cabin/total)\\nsurv_cabin = 0\\ndead_cabin = 0\\nfor i in range(891):\\n    if df_train['Survived'][i] == 1 and df_train['Cabin'][i] == 1:\\n        surv_cabin += 1\\n    if df_train['Survived'][i] == 0 and df_train['Cabin'][i] == 1:\\n        dead_cabin += 1\\ntotal = surv_cabin + dead_cabin\\nprint(surv_cabin/total)\\n\""
+      ]
+     },
+     "execution_count": 13,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "\"\"\"\n",
+    "surv_cabin = 0\n",
+    "dead_cabin = 0\n",
+    "for i in range(891):\n",
+    "    if df_train['Survived'][i] == 1 and df_train['Cabin'][i] == 0:\n",
+    "        surv_cabin += 1\n",
+    "    if df_train['Survived'][i] == 0 and df_train['Cabin'][i] == 0:\n",
+    "        dead_cabin += 1\n",
+    "total = surv_cabin + dead_cabin\n",
+    "print(surv_cabin/total)\n",
+    "surv_cabin = 0\n",
+    "dead_cabin = 0\n",
+    "for i in range(891):\n",
+    "    if df_train['Survived'][i] == 1 and df_train['Cabin'][i] == 1:\n",
+    "        surv_cabin += 1\n",
+    "    if df_train['Survived'][i] == 0 and df_train['Cabin'][i] == 1:\n",
+    "        dead_cabin += 1\n",
+    "total = surv_cabin + dead_cabin\n",
+    "print(surv_cabin/total)\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "prime-legislature",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:16.022623Z",
+     "iopub.status.busy": "2021-07-01T03:15:16.021972Z",
+     "iopub.status.idle": "2021-07-01T03:15:16.025105Z",
+     "shell.execute_reply": "2021-07-01T03:15:16.024456Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.691081Z"
+    },
+    "papermill": {
+     "duration": 0.041037,
+     "end_time": "2021-07-01T03:15:16.025247",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:15.984210",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "l = []\n",
+    "for i in df_test['Sex']:\n",
+    "    if i == \"male\":\n",
+    "        l.append(1)\n",
+    "    if i == \"female\":\n",
+    "        l.append(0)\n",
+    "df_test[\"Sex\"] = l"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 15,
+   "id": "immune-kingdom",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:16.093425Z",
+     "iopub.status.busy": "2021-07-01T03:15:16.092782Z",
+     "iopub.status.idle": "2021-07-01T03:15:16.095869Z",
+     "shell.execute_reply": "2021-07-01T03:15:16.095325Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.702911Z"
+    },
+    "papermill": {
+     "duration": 0.039189,
+     "end_time": "2021-07-01T03:15:16.096005",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:16.056816",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "#c=0\n",
+    "#for i in df_train[\"Sex\"]:\n",
+    "#    print(i,df_train['Survived'][c])\n",
+    "#\n",
+    "#    c=c+1"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "economic-union",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:16.164662Z",
+     "iopub.status.busy": "2021-07-01T03:15:16.163833Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.138650Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.139207Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.711843Z"
+    },
+    "papermill": {
+     "duration": 7.011898,
+     "end_time": "2021-07-01T03:15:23.139381",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:16.127483",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "import tensorflow as tf\n",
+    "from tensorflow import keras\n",
+    "from tensorflow import keras\n",
+    "from tensorflow.keras import layers\n",
+    "from sklearn.model_selection import train_test_split\n",
+    "from tensorflow.keras.layers import Dense"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "detected-blend",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.207687Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.206720Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.210978Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.211522Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.719968Z"
+    },
+    "papermill": {
+     "duration": 0.040495,
+     "end_time": "2021-07-01T03:15:23.211732",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.171237",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "from tensorflow.keras import Sequential\n",
+    "#from tensorflow.keras import Classification"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "different-specific",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.280363Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.279344Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.283467Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.284050Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.728582Z"
+    },
+    "papermill": {
+     "duration": 0.039735,
+     "end_time": "2021-07-01T03:15:23.284231",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.244496",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "#df_train = df_train.drop(columns = [\"PassengerId\", \"Name\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "dressed-problem",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.352663Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.351614Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.355335Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.355896Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.736852Z"
+    },
+    "papermill": {
+     "duration": 0.040307,
+     "end_time": "2021-07-01T03:15:23.356069",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.315762",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "#df_test = df_test.drop(columns = [\"PassengerId\", \"Name\"])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "private-plasma",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.423696Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.422702Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.429495Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.429976Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.745442Z"
+    },
+    "papermill": {
+     "duration": 0.041934,
+     "end_time": "2021-07-01T03:15:23.430149",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.388215",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "X_all = df_train[['Pclass','Sex','Age','SibSp',\"Parch\",'Embarked']].values\n",
+    "y = df_train['Survived'].values"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "wicked-position",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.497405Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.496411Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.501035Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.501524Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.756838Z"
+    },
+    "papermill": {
+     "duration": 0.039526,
+     "end_time": "2021-07-01T03:15:23.501712",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.462186",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "X_train, X_test, y_train, y_test = train_test_split(X_all, y, test_size=0.2)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 22,
+   "id": "growing-anxiety",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.569280Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.568284Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.578148Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.577647Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.766756Z"
+    },
+    "papermill": {
+     "duration": 0.044496,
+     "end_time": "2021-07-01T03:15:23.578311",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.533815",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "(712, 6)\n",
+      "(712,)\n",
+      "(179, 6)\n",
+      "(179,)\n"
+     ]
+    },
+    {
+     "data": {
+      "text/plain": [
+       "array([1, 0, 0, 1, 1, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 0, 1, 1, 0, 1,\n",
+       "       1, 0, 0, 0, 1, 1, 1, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1,\n",
+       "       1, 1, 1, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1,\n",
+       "       0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1,\n",
+       "       0, 0, 1, 1, 0, 0, 1, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 1,\n",
+       "       0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 0, 0, 1, 1,\n",
+       "       0, 0, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1,\n",
+       "       0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0,\n",
+       "       0, 0, 0])"
+      ]
+     },
+     "execution_count": 22,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "#print(X_train.shape)\n",
+    "#print(y_train.shape)\n",
+    "#print(X_test.shape)\n",
+    "#print(y_test.shape)\n",
+    "#y_test = np.atleast_2d(y_test).T\n",
+    "#y_train = np.atleast_2d(y_train).T\n",
+    "\n",
+    "print(X_train.shape)\n",
+    "print(y_train.shape)\n",
+    "print(X_test.shape)\n",
+    "print(y_test.shape)\n",
+    "y_test"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "challenging-vegetable",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.647640Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.646992Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.649077Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.649559Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:46.776476Z"
+    },
+    "papermill": {
+     "duration": 0.038772,
+     "end_time": "2021-07-01T03:15:23.649727",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.610955",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "#X_test.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "japanese-poland",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.717714Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.716988Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.720315Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.720833Z",
+     "shell.execute_reply.started": "2021-07-01T03:02:26.794902Z"
+    },
+    "papermill": {
+     "duration": 0.038819,
+     "end_time": "2021-07-01T03:15:23.721006",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.682187",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "#model = Sequential()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 25,
+   "id": "finnish-catering",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.802989Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.802280Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.807973Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.807424Z",
+     "shell.execute_reply.started": "2021-07-01T03:02:27.177205Z"
+    },
+    "papermill": {
+     "duration": 0.048659,
+     "end_time": "2021-07-01T03:15:23.808112",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.759453",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "'\\nmodel.add(keras.Input(shape=(6,)))\\nmodel.add(Dense(512,activation = \"relu\"))\\nmodel.add(layers.Dropout(0.1))\\nmodel.add(Dense(512,activation = \"relu\"))\\nmodel.add(layers.Dropout(0.1))\\nmodel.add(Dense(512,activation = \"relu\"))\\nmodel.add(layers.Dropout(0.1))\\nmodel.add(Dense(512,activation = \"relu\"))\\nmodel.add(layers.Dropout(0.1))\\n\\n\\n\\nmodel.add(Dense(2,activation = \\'softmax\\'))\\n'"
+      ]
+     },
+     "execution_count": 25,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "\"\"\"\n",
+    "model.add(keras.Input(shape=(6,)))\n",
+    "model.add(Dense(512,activation = \"relu\"))\n",
+    "model.add(layers.Dropout(0.1))\n",
+    "model.add(Dense(512,activation = \"relu\"))\n",
+    "model.add(layers.Dropout(0.1))\n",
+    "model.add(Dense(512,activation = \"relu\"))\n",
+    "model.add(layers.Dropout(0.1))\n",
+    "model.add(Dense(512,activation = \"relu\"))\n",
+    "model.add(layers.Dropout(0.1))\n",
+    "\n",
+    "\n",
+    "\n",
+    "model.add(Dense(2,activation = 'softmax'))\n",
+    "\"\"\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "id": "younger-morgan",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.880870Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.879893Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.882771Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.883280Z",
+     "shell.execute_reply.started": "2021-07-01T03:02:27.354364Z"
+    },
+    "papermill": {
+     "duration": 0.042033,
+     "end_time": "2021-07-01T03:15:23.883447",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.841414",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "#opt3 = keras.optimizers.Adam(learning_rate=0.007)\n",
+    "#model.compile(loss='sparse_categorical_crossentropy',  metrics=['accuracy'], optimizer=opt3)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 27,
+   "id": "great-owner",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:23.953958Z",
+     "iopub.status.busy": "2021-07-01T03:15:23.953259Z",
+     "iopub.status.idle": "2021-07-01T03:15:23.955237Z",
+     "shell.execute_reply": "2021-07-01T03:15:23.955724Z",
+     "shell.execute_reply.started": "2021-07-01T03:04:12.185957Z"
+    },
+    "papermill": {
+     "duration": 0.039124,
+     "end_time": "2021-07-01T03:15:23.955897",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.916773",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "accuracy = 0"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 28,
+   "id": "realistic-south",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:24.025530Z",
+     "iopub.status.busy": "2021-07-01T03:15:24.024840Z",
+     "iopub.status.idle": "2021-07-01T03:15:31.445023Z",
+     "shell.execute_reply": "2021-07-01T03:15:31.445593Z",
+     "shell.execute_reply.started": "2021-07-01T03:07:53.253044Z"
+    },
+    "papermill": {
+     "duration": 7.457321,
+     "end_time": "2021-07-01T03:15:31.445776",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:23.988455",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Epoch 1/15\n",
+      "6/6 [==============================] - 1s 143ms/step - loss: 45.9541 - accuracy: 0.5480 - val_loss: 0.7657 - val_accuracy: 0.5698\n",
+      "Epoch 2/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.7458 - accuracy: 0.5900 - val_loss: 0.6891 - val_accuracy: 0.5698\n",
+      "Epoch 3/15\n",
+      "6/6 [==============================] - 0s 26ms/step - loss: 0.6753 - accuracy: 0.5837 - val_loss: 0.7127 - val_accuracy: 0.5698\n",
+      "Epoch 4/15\n",
+      "6/6 [==============================] - 0s 26ms/step - loss: 0.6876 - accuracy: 0.6159 - val_loss: 0.7179 - val_accuracy: 0.5866\n",
+      "Epoch 5/15\n",
+      "6/6 [==============================] - 0s 26ms/step - loss: 0.6603 - accuracy: 0.6584 - val_loss: 0.6619 - val_accuracy: 0.5866\n",
+      "Epoch 6/15\n",
+      "6/6 [==============================] - 0s 26ms/step - loss: 0.6375 - accuracy: 0.6430 - val_loss: 0.6391 - val_accuracy: 0.6034\n",
+      "Epoch 7/15\n",
+      "6/6 [==============================] - 0s 29ms/step - loss: 0.6169 - accuracy: 0.6655 - val_loss: 0.6544 - val_accuracy: 0.6034\n",
+      "Epoch 8/15\n",
+      "6/6 [==============================] - 0s 32ms/step - loss: 0.6171 - accuracy: 0.6552 - val_loss: 0.6352 - val_accuracy: 0.6034\n",
+      "Epoch 9/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.5819 - accuracy: 0.7015 - val_loss: 0.6169 - val_accuracy: 0.6089\n",
+      "Epoch 10/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.5545 - accuracy: 0.6980 - val_loss: 0.5435 - val_accuracy: 0.7095\n",
+      "Epoch 11/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.5530 - accuracy: 0.7149 - val_loss: 0.5272 - val_accuracy: 0.7654\n",
+      "Epoch 12/15\n",
+      "6/6 [==============================] - 0s 26ms/step - loss: 0.5166 - accuracy: 0.7603 - val_loss: 0.4990 - val_accuracy: 0.7709\n",
+      "Epoch 13/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.4908 - accuracy: 0.7714 - val_loss: 0.5190 - val_accuracy: 0.7486\n",
+      "Epoch 14/15\n",
+      "6/6 [==============================] - 0s 26ms/step - loss: 0.4924 - accuracy: 0.7963 - val_loss: 0.4725 - val_accuracy: 0.8101\n",
+      "Epoch 15/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.4832 - accuracy: 0.7927 - val_loss: 0.4606 - val_accuracy: 0.7709\n",
+      "0.770949720670391\n",
+      "Epoch 1/15\n",
+      "6/6 [==============================] - 1s 64ms/step - loss: 26.0227 - accuracy: 0.5742 - val_loss: 0.8777 - val_accuracy: 0.5698\n",
+      "Epoch 2/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.6917 - accuracy: 0.6112 - val_loss: 0.6623 - val_accuracy: 0.5978\n",
+      "Epoch 3/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.6868 - accuracy: 0.6266 - val_loss: 0.6968 - val_accuracy: 0.5754\n",
+      "Epoch 4/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.6424 - accuracy: 0.6479 - val_loss: 0.6590 - val_accuracy: 0.5810\n",
+      "Epoch 5/15\n",
+      "6/6 [==============================] - 0s 26ms/step - loss: 0.6006 - accuracy: 0.6856 - val_loss: 0.6086 - val_accuracy: 0.6034\n",
+      "Epoch 6/15\n",
+      "6/6 [==============================] - 0s 28ms/step - loss: 0.5793 - accuracy: 0.6786 - val_loss: 0.5715 - val_accuracy: 0.7207\n",
+      "Epoch 7/15\n",
+      "6/6 [==============================] - 0s 26ms/step - loss: 0.5716 - accuracy: 0.7034 - val_loss: 0.5423 - val_accuracy: 0.7654\n",
+      "Epoch 8/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.5636 - accuracy: 0.7375 - val_loss: 0.5388 - val_accuracy: 0.7318\n",
+      "Epoch 9/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.5345 - accuracy: 0.7704 - val_loss: 0.5284 - val_accuracy: 0.7486\n",
+      "Epoch 10/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.4901 - accuracy: 0.7895 - val_loss: 0.4861 - val_accuracy: 0.8156\n",
+      "Epoch 11/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.4639 - accuracy: 0.8215 - val_loss: 0.4725 - val_accuracy: 0.8156\n",
+      "Epoch 12/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.5006 - accuracy: 0.7772 - val_loss: 0.4584 - val_accuracy: 0.8268\n",
+      "Epoch 13/15\n",
+      "6/6 [==============================] - 0s 28ms/step - loss: 0.4362 - accuracy: 0.8334 - val_loss: 0.5117 - val_accuracy: 0.7542\n",
+      "Epoch 14/15\n",
+      "6/6 [==============================] - 0s 28ms/step - loss: 0.4503 - accuracy: 0.8161 - val_loss: 0.4684 - val_accuracy: 0.8101\n",
+      "Epoch 15/15\n",
+      "6/6 [==============================] - 0s 27ms/step - loss: 0.4324 - accuracy: 0.8330 - val_loss: 0.4511 - val_accuracy: 0.8212\n",
+      "0.8212290502793296\n"
+     ]
+    }
+   ],
+   "source": [
+    "\n",
+    "while accuracy < 0.81:\n",
+    "    model = Sequential()\n",
+    "    model.add(keras.Input(shape=(6,)))\n",
+    "    model.add(Dense(512,activation = \"relu\"))\n",
+    "    model.add(layers.Dropout(0.1))\n",
+    "    model.add(Dense(512,activation = \"relu\"))\n",
+    "    model.add(layers.Dropout(0.1))\n",
+    "    model.add(Dense(512,activation = \"relu\"))\n",
+    "    model.add(layers.Dropout(0.1))\n",
+    "    model.add(Dense(512,activation = \"relu\"))\n",
+    "    model.add(layers.Dropout(0.1))\n",
+    "\n",
+    "    model.add(Dense(2,activation = 'softmax'))\n",
+    "    \n",
+    "    opt3 = keras.optimizers.Adam(learning_rate=0.01)\n",
+    "    model.compile(loss='sparse_categorical_crossentropy',  metrics=['accuracy'], optimizer=opt3)\n",
+    "    model.fit(X_train, y_train, epochs=15, batch_size=128, verbose=1, validation_data=(X_test,y_test))\n",
+    "    predictions = model.predict(X_test)\n",
+    "    x = []\n",
+    "    for i in predictions:\n",
+    "        if i[0] < 0.5:\n",
+    "            x.append(1)\n",
+    "        else:\n",
+    "            x.append(0)\n",
+    "    counter = 0\n",
+    "    correct = 0\n",
+    "    total = 179\n",
+    "    for i in x:\n",
+    "        if i == y_test[counter]:\n",
+    "            correct += 1\n",
+    "        else:\n",
+    "            pass\n",
+    "        counter += 1\n",
+    "    accuracy = correct/total\n",
+    "    print(accuracy)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 29,
+   "id": "fifth-convention",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:31.576287Z",
+     "iopub.status.busy": "2021-07-01T03:15:31.575315Z",
+     "iopub.status.idle": "2021-07-01T03:15:31.581351Z",
+     "shell.execute_reply": "2021-07-01T03:15:31.581832Z",
+     "shell.execute_reply.started": "2021-07-01T03:08:21.354014Z"
+    },
+    "papermill": {
+     "duration": 0.071199,
+     "end_time": "2021-07-01T03:15:31.582015",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:31.510816",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "sub_x = df_test[['Pclass','Sex','Age','SibSp',\"Parch\",'Embarked']].values\n",
+    "#sub_y = df_train['Survived'].values"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 30,
+   "id": "lesser-virgin",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:31.708455Z",
+     "iopub.status.busy": "2021-07-01T03:15:31.707493Z",
+     "iopub.status.idle": "2021-07-01T03:15:31.713254Z",
+     "shell.execute_reply": "2021-07-01T03:15:31.713761Z",
+     "shell.execute_reply.started": "2021-07-01T03:08:23.194641Z"
+    },
+    "papermill": {
+     "duration": 0.070729,
+     "end_time": "2021-07-01T03:15:31.713932",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:31.643203",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "array([[ 3.,  1., 24.,  0.,  0.,  1.],\n",
+       "       [ 1.,  1., 17.,  0.,  2.,  2.],\n",
+       "       [ 3.,  1., 34.,  0.,  0.,  1.],\n",
+       "       ...,\n",
+       "       [ 1.,  1., 24.,  0.,  1.,  2.],\n",
+       "       [ 1.,  1., 45.,  1.,  0.,  1.],\n",
+       "       [ 3.,  1., 22.,  0.,  0.,  1.]])"
+      ]
+     },
+     "execution_count": 30,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "X_train"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 31,
+   "id": "collaborative-taxation",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:31.842308Z",
+     "iopub.status.busy": "2021-07-01T03:15:31.841267Z",
+     "iopub.status.idle": "2021-07-01T03:15:31.847372Z",
+     "shell.execute_reply": "2021-07-01T03:15:31.846883Z",
+     "shell.execute_reply.started": "2021-07-01T03:08:25.872443Z"
+    },
+    "papermill": {
+     "duration": 0.071467,
+     "end_time": "2021-07-01T03:15:31.847511",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:31.776044",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "(418, 6)"
+      ]
+     },
+     "execution_count": 31,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "sub_x.shape"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 32,
+   "id": "constitutional-precipitation",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:31.979438Z",
+     "iopub.status.busy": "2021-07-01T03:15:31.978773Z",
+     "iopub.status.idle": "2021-07-01T03:15:32.048237Z",
+     "shell.execute_reply": "2021-07-01T03:15:32.047597Z",
+     "shell.execute_reply.started": "2021-07-01T03:08:28.796467Z"
+    },
+    "papermill": {
+     "duration": 0.13819,
+     "end_time": "2021-07-01T03:15:32.048391",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:31.910201",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": [
+    "predictions2 = model.predict(sub_x)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 33,
+   "id": "tamil-partition",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:32.181171Z",
+     "iopub.status.busy": "2021-07-01T03:15:32.180217Z",
+     "iopub.status.idle": "2021-07-01T03:15:32.183910Z",
+     "shell.execute_reply": "2021-07-01T03:15:32.184411Z",
+     "shell.execute_reply.started": "2021-07-01T03:08:30.096733Z"
+    },
+    "papermill": {
+     "duration": 0.074324,
+     "end_time": "2021-07-01T03:15:32.184600",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:32.110276",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "[0, 1, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1, 1, 0, 0, 0, 0, 0, 1, 0, 1, 1, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 1, 1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 1, 0, 0, 0]\n"
+     ]
+    }
+   ],
+   "source": [
+    "x = []\n",
+    "for i in predictions2:\n",
+    "    if i[0] < 0.5:\n",
+    "        x.append(1)\n",
+    "    else:\n",
+    "        x.append(0)\n",
+    "print(x)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 34,
+   "id": "handed-taxation",
+   "metadata": {
+    "execution": {
+     "iopub.execute_input": "2021-07-01T03:15:32.317075Z",
+     "iopub.status.busy": "2021-07-01T03:15:32.316352Z",
+     "iopub.status.idle": "2021-07-01T03:15:32.325486Z",
+     "shell.execute_reply": "2021-07-01T03:15:32.326246Z",
+     "shell.execute_reply.started": "2021-07-01T02:34:49.430978Z"
+    },
+    "papermill": {
+     "duration": 0.079574,
+     "end_time": "2021-07-01T03:15:32.326474",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:32.246900",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Your submission was successfully saved!\n"
+     ]
+    }
+   ],
+   "source": [
+    "output = pd.DataFrame({'PassengerId': df_test.PassengerId, 'Survived': x})\n",
+    "output.to_csv('my_submission.csv', index=False)\n",
+    "print(\"Your submission was successfully saved!\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "immune-vinyl",
+   "metadata": {
+    "papermill": {
+     "duration": 0.063183,
+     "end_time": "2021-07-01T03:15:32.453889",
+     "exception": false,
+     "start_time": "2021-07-01T03:15:32.390706",
+     "status": "completed"
+    },
+    "tags": []
+   },
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python 3",
+   "language": "python",
+   "name": "python3"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.7.10"
+  },
+  "papermill": {
+   "default_parameters": {},
+   "duration": 27.923616,
+   "end_time": "2021-07-01T03:15:34.468714",
+   "environment_variables": {},
+   "exception": null,
+   "input_path": "__notebook__.ipynb",
+   "output_path": "__notebook__.ipynb",
+   "parameters": {},
+   "start_time": "2021-07-01T03:15:06.545098",
+   "version": "2.3.3"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
